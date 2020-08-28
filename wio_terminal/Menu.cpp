@@ -3,7 +3,6 @@
 */
 #include "Menu.h"
 #include "Display.h"
-#include "WioServer.h"
 #include "Util.h"
 
 const int SCRIPTLEN=2;
@@ -16,9 +15,9 @@ int script_index=-1;
 
 const int MENULEN= 3;
 MenuFunc menus[MENULEN]={
-    {"history",Menu::history},
     {"screen off",Display::turnOff},
-    {"start ap",WioServer::startAP},
+    {"escape ANSI",Menu::escapeANSI},
+    {"history",Menu::history},
 };
 
 int menu_index=-1;
@@ -56,14 +55,37 @@ extern std::vector<String> history_cmd;
 
 extern bool is_history;
 int history_index=0;
+extern bool is_sd_card;
 extern std::vector<String> history_record;
+extern File history_file;
+extern uint8_t history_file_mode;
+extern String log_name;
 
 void Menu::history(){
     is_history=!is_history;
     if(is_history){
-        Display::showC("history on");
+        Display::showA("history on");
+        if(is_sd_card){
+            if(log_name!=""){
+                history_file.close();
+            }
+            Util::lsAndLog();
+        }
     }else{
-        Display::showC("history off");
+        Display::showA("history off");
+        history_file.close();
+        log_name="";
+    }
+}
+
+extern bool is_escape_ansi;
+
+void Menu::escapeANSI(){
+    is_escape_ansi=!is_escape_ansi;
+    if(is_escape_ansi){
+        Display::showA("escape ANSI on");
+    }else{
+        Display::showA("escape ANSI off");
     }
 }
 
@@ -198,6 +220,7 @@ void Menu::doConfirm(){
         cmd_str="";
         Serial1.write(tmp.c_str());
         Serial1.write("\n");
+        Display::showCmd("");
     }
 }
 
@@ -233,6 +256,8 @@ void Menu::doRight(){
             for(int i=0;i<15;i++){
                 Display::print(history_record[head+i],2,20+i*15);
             }
+        }else{
+            history_index=history_index+10;
         }
     }
 }
@@ -250,7 +275,14 @@ void Menu::doDown(){
     }else{
         history_index=0;
         cmd_index=history_cmd.size();
+        history_record.clear();
+        if(is_history&&history_file_mode==0&&log_name!=""){
+            history_file=SD.open(log_name,FILE_APPEND);
+            history_file_mode=FILE_APPEND;
+            Serial.println("reopen history_file");
+        }
         Util::printTerminal();
+        Display::showCmd("");
     }
 }
 
@@ -259,6 +291,7 @@ void Menu::doLeft(){
         key_index--;
         Menu::showKeyboard();
     }else if(is_history){
+        Util::readHistoryRecord();
         history_index=history_index+10;
         int head=history_record.size()-history_index-15;
         if(head>=0&&head+14<history_record.size()){
@@ -266,6 +299,8 @@ void Menu::doLeft(){
             for(int i=0;i<15;i++){
                 Display::print(history_record[head+i],2,20+i*15);
             }
+        }else{
+            history_index=history_index-10;
         }
     }
 }

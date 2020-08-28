@@ -29,6 +29,7 @@ namespace Menu{
     void doLeft();
     void doConfirm();
     void history();
+    void escapeANSI();
 }
 
 #endif

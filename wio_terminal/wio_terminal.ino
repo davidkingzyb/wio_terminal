@@ -1,5 +1,4 @@
 #include "Display.h"
-#include "WioServer.h"
 #include "Util.h"
 #include "Menu.h"
 #include <Wire.h>
@@ -18,12 +17,13 @@ void setup() {
     pinMode(WIO_KEY_B, INPUT_PULLUP);
     pinMode(WIO_KEY_C, INPUT_PULLUP);
     pinMode(WIO_5S_UP, INPUT_PULLUP);
-    pinMode(WIO_5S_DOWM, INPUT_PULLUP);
+    pinMode(WIO_5S_DOWN, INPUT_PULLUP);
     pinMode(WIO_5S_LEFT, INPUT_PULLUP);
     pinMode(WIO_5S_RIGHT, INPUT_PULLUP);
     pinMode(WIO_5S_PRESS, INPUT_PULLUP);
 
     Display::init(); 
+    Util::initSDCard();
 }
 
 String tty_string="";
@@ -32,11 +32,11 @@ void loop() {
     //rasberry pi serial1
     while(Serial1.available()){
         tty_string=tty_string+char(Serial1.read());
-        delay(2);
+        //delay(1);
     }
 
     if(tty_string.length()>0){
-        Serial.println(tty_string);
+        Serial.print(tty_string);
         Util::record(tty_string);
         tty_string="";
     }
@@ -47,13 +47,13 @@ void loop() {
         char c = Wire.read(); // receive a byte as characterif
         if (c != 0){
             if((int)c==0x80){//fn+esc ^C
-                Serial.print("^C");
+                //Serial.print("^C");
                 c=(char)0x03;
             }else if((int)c==0x8b){
                 c=(char)0x04;
             }
-            Serial.print(c, DEC);
-            Serial.println(c);
+            //Serial.print(c, DEC);
+            //Serial.println(c);
             Serial1.write(c);
         }
     }
@@ -70,20 +70,20 @@ void loop() {
     }else if (digitalRead(WIO_5S_UP) == LOW) {
         Menu::doUp();
         delay(100);
-    }else if (digitalRead(WIO_5S_DOWM) == LOW) {
+    }else if (digitalRead(WIO_5S_DOWN) == LOW) {
         Menu::doDown();
         delay(100);
     }else if (digitalRead(WIO_5S_LEFT) == LOW) {
         Menu::doLeft();
-        delay(50);
+        delay(100);
     }else if (digitalRead(WIO_5S_RIGHT) == LOW) {
         Menu::doRight();
-        delay(50);
+        delay(100);
     }else if (digitalRead(WIO_5S_PRESS) == LOW) {
         Menu::doConfirm();
         delay(200);
     }
 
 
-    delay(10);//for server loop    
+    //delay(10);//for server loop    
 }
